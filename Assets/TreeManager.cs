@@ -8,9 +8,9 @@ public class Rule{
     public char inital;
     public string result;
 
-    public bool Match(char i){
+    public bool Match(char c){
 
-        if(i == inital){
+        if(c == inital){
 
             return true;
 
@@ -44,42 +44,46 @@ public class TreeManager : MonoBehaviour
     public List<RulePreset> presets = new List<RulePreset>();
 
     [Header("Visual Variables")]
+    public CameraContain cameraContain;
     [SerializeField]   
     public float timePerGen = 1f;
     public float length = 1f;
+
 
     [Header("Realtime Values")]
     [SerializeField]  
     public Stack<NodePos> nodeStack = new Stack<NodePos>();
     public string currentTree;
-    public int currentGeneration;
+    public int currentGeneration = 0;
 
     [Header("Objects")]
     public Transform spawner;
     public GameObject nodeObj;
+    public GameObject tree;
     public GameObject line;
     NodePos nodePos = new NodePos();
 
     [Header("Preset's Values")]
     public string presetName;
-    public char start;
+    public string axiom;
     public float angle = 25f;
     public int n;
     public Rule[] productionRules = new Rule[1];
 
     string newTree;
+    GameObject newTreeObj;
     float time;
 
     // Start is called before the first frame update
     void Start(){
 
         presetName = presets[preset].name;
-        start = presets[preset].start;
+        axiom = presets[preset].axiom;
         angle = presets[preset].angle;
         n = presets[preset].n;
         productionRules = presets[preset].rules;
 
-        currentTree += start;
+        currentTree += axiom;
         Debug.Log(currentTree);
         
     }
@@ -97,28 +101,35 @@ public class TreeManager : MonoBehaviour
             time = 0;
 
         }
-
         
         time += Time.deltaTime;
     }
 
     public string ApplyRule(char c){
 
+        bool matchFound = false;
+        int index = -1;
+
         for(int i = 0;i < productionRules.Length;i++){
 
             if(productionRules[i].Match(c)){
 
-                return productionRules[i].GetResult();
+                matchFound = true;
+                index = i;
                         
-            } else{
-
-                return c.ToString();
-
             }
 
         }
 
-        return "";
+        if(matchFound){
+
+            return productionRules[index].GetResult();
+            
+        } else {
+
+            return c.ToString();
+
+        }
 
     }
 
@@ -146,20 +157,23 @@ public class TreeManager : MonoBehaviour
         GameObject obj = Instantiate(line,transform.position,Quaternion.identity);
         LineRenderer lineRenderer = obj.GetComponent<LineRenderer>();
 
-        obj.transform.parent = transform;
+        obj.transform.parent = newTreeObj.transform;
         lineRenderer.SetPosition(0,start);
         lineRenderer.SetPosition(1,end);
 
     }
 
-    void GenerateTreeVisual(string tree){
+    void GenerateTreeVisual(string treeString){
 
-        //length /= 2;
+        Destroy(newTreeObj);
+        spawner.position = Vector3.zero;
+        spawner.rotation = Quaternion.identity;
 
-        for(int i=0;i<tree.Length;i++){
+        newTreeObj = (GameObject)Instantiate(tree,Vector3.zero,Quaternion.identity);
 
+        for(int i=0;i<treeString.Length;i++){
 
-            switch(tree[i]){
+            switch(treeString[i]){
 
                 case '+':
 
@@ -200,7 +214,16 @@ public class TreeManager : MonoBehaviour
 
             }
 
+            //cameraContain.UpdatePosition(spawner.position);
+
+            cameraContain.UpdatePositionAvg(Vector3.zero,spawner.position);
+
+            cameraContain.camera.orthographicSize = spawner.position.y * cameraContain.spawnerToSizeRatio;
+
+
         }
+
+
 
     }
 

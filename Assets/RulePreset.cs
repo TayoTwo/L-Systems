@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class RulePreset : MonoBehaviour
 {
-    public char start;
+    public string axiom;
     public float angle;
 
     public int n;
