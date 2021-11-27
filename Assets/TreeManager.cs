@@ -8,15 +8,15 @@ public class Rule{
     public char inital;
     public string result;
 
-    public bool Match(char c){
+    public string Apply(char c){
 
         if(c == inital){
 
-            return true;
+            return result;
 
         } else {
 
-            return false;
+            return c.ToString();
 
         }
 
@@ -25,6 +25,33 @@ public class Rule{
     public string GetResult(){
 
         return result;
+
+    }
+
+}
+
+public class MeshObj{
+
+    Vector3[] vertices;
+    int[] triangles;
+
+    public MeshObj(Vector3[] v,int[] t){
+
+       vertices = v;
+       triangles = t;
+
+    }
+
+    public Mesh Generate(){
+
+        Mesh m = new Mesh();
+
+        m.vertices = vertices;
+        m.triangles = triangles;
+
+        m.RecalculateNormals();
+
+        return m;
 
     }
 
@@ -48,7 +75,7 @@ public class TreeManager : MonoBehaviour
     [SerializeField]   
     public float timePerGen = 1f;
     public float length = 1f;
-
+    public float width = 1f;
 
     [Header("Realtime Values")]
     [SerializeField]  
@@ -59,7 +86,7 @@ public class TreeManager : MonoBehaviour
     [Header("Objects")]
     public Transform spawner;
     public GameObject nodeObj;
-    public GameObject tree;
+    public GameObject treeObj;
     public GameObject line;
     NodePos nodePos = new NodePos();
 
@@ -71,6 +98,7 @@ public class TreeManager : MonoBehaviour
     public Rule[] productionRules = new Rule[1];
 
     string newTree;
+    Mesh treeMesh;
     GameObject newTreeObj;
     float time;
 
@@ -85,52 +113,26 @@ public class TreeManager : MonoBehaviour
 
         currentTree += axiom;
         Debug.Log(currentTree);
+
+        SpawnMesh();
         
     }
 
     void Update() {
 
-        if(time >= timePerGen){
+        // if(time >= timePerGen){
 
-            if(currentGeneration < n){
+        //     if(currentGeneration < n){
 
-                GenerateTree();
+        //         GenerateTree();
 
-            }
+        //     }
 
-            time = 0;
+        //     time = 0;
 
-        }
+        // }
         
-        time += Time.deltaTime;
-    }
-
-    public string ApplyRule(char c){
-
-        bool matchFound = false;
-        int index = -1;
-
-        for(int i = 0;i < productionRules.Length;i++){
-
-            if(productionRules[i].Match(c)){
-
-                matchFound = true;
-                index = i;
-                        
-            }
-
-        }
-
-        if(matchFound){
-
-            return productionRules[index].GetResult();
-            
-        } else {
-
-            return c.ToString();
-
-        }
-
+        // time += Time.deltaTime;
     }
 
     void GenerateTree(){
@@ -142,7 +144,15 @@ public class TreeManager : MonoBehaviour
 
             char c = currentTree[i];
 
-            newTree += ApplyRule(c);
+            string result = "";
+
+            for(int j = 0;j < productionRules.Length;j++){
+
+                result = productionRules[j].Apply(c);
+
+            }
+
+            newTree += result;
 
         }
 
@@ -163,13 +173,68 @@ public class TreeManager : MonoBehaviour
 
     }
 
+    void SpawnMesh(Vector3 pos){
+
+        GameObject obj = Instantiate(treeObj,transform.position,Quaternion.identity);
+
+        Vector3[] vertices = new Vector3[]{
+
+                Vector3.zero,
+                Vector3.right,
+                (Vector3.right + Vector3.forward),
+                Vector3.forward,
+                Vector3.up,
+                (Vector3.up + Vector3.forward),
+                Vector3.one,
+                (Vector3.right + Vector3.up)
+
+            };
+
+        for(int i = 0;i < vertices.Length;i++){
+
+            vertices[i].x *= width;
+            vertices[i].z *= length;
+
+        }
+
+        MeshObj meshObj = new MeshObj(
+            vertices,
+            new int[]{
+
+                //SideX+
+                1,7,6,
+                6,2,1,
+                
+                //SideX-
+                0,3,5,
+                5,4,0,
+
+                //SideZ+
+                6,5,3,
+                3,2,6,
+
+                //SideZ-
+                7,1,0,
+                0,4,7
+
+            }
+
+        );
+
+        obj.GetComponent<MeshFilter>().mesh = meshObj.Generate();
+
+        obj.transform.position = 
+
+    }
+
+    //Using line renderers
     void GenerateTreeVisual(string treeString){
 
         Destroy(newTreeObj);
         spawner.position = Vector3.zero;
         spawner.rotation = Quaternion.identity;
 
-        newTreeObj = (GameObject)Instantiate(tree,Vector3.zero,Quaternion.identity);
+        newTreeObj = (GameObject)Instantiate(treeObj,Vector3.zero,Quaternion.identity);
 
         for(int i=0;i<treeString.Length;i++){
 
@@ -227,4 +292,65 @@ public class TreeManager : MonoBehaviour
 
     }
 
+    void GenerateTreeMesh(string treeString){
+
+        Destroy(newTreeObj);
+        spawner.position = Vector3.zero;
+        spawner.rotation = Quaternion.identity;
+
+        newTreeObj = (GameObject)Instantiate(treeObj,Vector3.zero,Quaternion.identity);
+
+        for(int i=0;i<treeString.Length;i++){
+
+            switch(treeString[i]){
+
+                case '+':
+
+                    spawner.Rotate(Vector3.forward * angle,Space.Self);
+                    break;
+
+                case '-':
+                    
+                    spawner.Rotate(Vector3.forward * -angle,Space.Self);
+                    break;
+
+                case '[':
+
+                    nodePos = new NodePos();
+                    nodePos.position = spawner.position;
+                    nodePos.rotation = spawner.rotation;
+
+                    nodeStack.Push(nodePos);
+
+                    break;
+
+                case ']':
+
+                    nodePos = nodeStack.Pop();
+                    spawner.position = nodePos.position;
+                    spawner.rotation = nodePos.rotation;
+
+                    break;
+                    
+                default:
+
+                    Vector3 intialPos = spawner.position;
+
+                    spawner.Translate(Vector3.up * length);
+                    SpawnLine(intialPos,spawner.position);
+                    break;
+
+
+            }
+
+            //cameraContain.UpdatePosition(spawner.position);
+
+            cameraContain.UpdatePositionAvg(Vector3.zero,spawner.position);
+
+            cameraContain.camera.orthographicSize = spawner.position.y * cameraContain.spawnerToSizeRatio;
+
+
+        }
+
+    }
 }
