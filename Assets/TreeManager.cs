@@ -32,9 +32,10 @@ public class Rule{
 
 public class MeshObj{
 
-    Vector3[] vertices;
-    int[] triangles;
+    public Vector3[] vertices;
+    public int[] triangles;
 
+    public MeshObj(){}
     public MeshObj(Vector3[] v,int[] t){
 
        vertices = v;
@@ -72,7 +73,6 @@ public class TreeManager : MonoBehaviour
 
     [Header("Visual Variables")]
     public CameraContain cameraContain;
-    [SerializeField]   
     public float timePerGen = 1f;
     public float length = 1f;
     public float width = 1f;
@@ -82,7 +82,6 @@ public class TreeManager : MonoBehaviour
     public Stack<NodePos> nodeStack = new Stack<NodePos>();
     public string currentTree;
     public int currentGeneration = 0;
-
     [Header("Objects")]
     public Transform spawner;
     public GameObject nodeObj;
@@ -98,12 +97,20 @@ public class TreeManager : MonoBehaviour
     public Rule[] productionRules = new Rule[1];
 
     string newTree;
-    Mesh treeMesh;
     GameObject newTreeObj;
     float time;
 
+
+    Mesh treeMesh;
+    MeshObj meshObj;
+    List<Vector3> treeVertices = new List<Vector3>();
+    List<int> treeTriangles = new List<int>();
+
     // Start is called before the first frame update
     void Start(){
+
+        treeMesh = new Mesh();
+        meshObj = new MeshObj();
 
         presetName = presets[preset].name;
         axiom = presets[preset].axiom;
@@ -113,26 +120,24 @@ public class TreeManager : MonoBehaviour
 
         currentTree += axiom;
         Debug.Log(currentTree);
-
-        SpawnMesh();
         
     }
 
     void Update() {
 
-        // if(time >= timePerGen){
+        if(time >= timePerGen){
 
-        //     if(currentGeneration < n){
+            if(currentGeneration < n){
 
-        //         GenerateTree();
+                GenerateTree();
 
-        //     }
+            }
 
-        //     time = 0;
+            time = 0;
 
-        // }
+        }
         
-        // time += Time.deltaTime;
+        time += Time.deltaTime;
     }
 
     void GenerateTree(){
@@ -158,7 +163,7 @@ public class TreeManager : MonoBehaviour
 
         currentTree = newTree;
         Debug.Log(currentTree);
-        GenerateTreeVisual(currentTree);
+        GenerateTreeMesh(currentTree);
 
     }
 
@@ -173,16 +178,17 @@ public class TreeManager : MonoBehaviour
 
     }
 
-    void SpawnMesh(Vector3 pos){
-
-        GameObject obj = Instantiate(treeObj,transform.position,Quaternion.identity);
+    void AddVertexInfo(Vector3 start,Vector3 end,char nextChar){
 
         Vector3[] vertices = new Vector3[]{
 
+                //Bottom
                 Vector3.zero,
                 Vector3.right,
                 (Vector3.right + Vector3.forward),
                 Vector3.forward,
+
+                //Top
                 Vector3.up,
                 (Vector3.up + Vector3.forward),
                 Vector3.one,
@@ -192,38 +198,99 @@ public class TreeManager : MonoBehaviour
 
         for(int i = 0;i < vertices.Length;i++){
 
+            vertices[i].x -= 0.5f;
+            vertices[i].z -= 0.5f;
+
             vertices[i].x *= width;
-            vertices[i].z *= length;
+            vertices[i].y *= length;
+            vertices[i].z *= width;
 
-        }
+            if(i < 4){
+                //0,1,2,3
+                vertices[i] += start;
 
-        MeshObj meshObj = new MeshObj(
-            vertices,
-            new int[]{
-
-                //SideX+
-                1,7,6,
-                6,2,1,
-                
-                //SideX-
-                0,3,5,
-                5,4,0,
-
-                //SideZ+
-                6,5,3,
-                3,2,6,
-
-                //SideZ-
-                7,1,0,
-                0,4,7
+            } else {
+                //4,5,6,7
+                vertices[i] += end;
 
             }
 
-        );
+            treeVertices.Add(vertices[i]);
 
-        obj.GetComponent<MeshFilter>().mesh = meshObj.Generate();
+        }
 
-        obj.transform.position = 
+
+        if(nextChar == ']'){
+
+            treeTriangles.AddRange(
+
+                new int[]{
+
+                    //Bottom
+                    // 0,1,2,
+                    // 0,2,3,
+
+                    //Top
+                    4,5,6,
+                    4,6,7,
+
+                    //SideX+
+                    1,7,6,
+                    6,2,1,
+                    
+                    //SideX-
+                    0,3,5,
+                    5,4,0,
+
+                    //SideZ+
+                    6,5,3,
+                    3,2,6,
+
+                    //SideZ-
+                    7,1,0,
+                    0,4,7
+
+                }
+
+            );
+
+        } else {
+
+            treeTriangles.AddRange(
+
+                new int[]{
+
+                    //SideX+
+                    1,7,6,
+                    6,2,1,
+                    
+                    //SideX-
+                    0,3,5,
+                    5,4,0,
+
+                    //SideZ+
+                    6,5,3,
+                    3,2,6,
+
+                    //SideZ-
+                    7,1,0,
+                    0,4,7
+
+                }
+
+            );
+
+        }
+
+
+        meshObj = new MeshObj(
+                treeVertices.ToArray(),
+                treeTriangles.ToArray()
+            );
+
+        // obj.GetComponent<MeshFilter>().mesh.Clear();
+        // obj.GetComponent<MeshFilter>().mesh = meshObj.Generate();
+        // obj.GetComponent<MeshFilter>().mesh.RecalculateNormals();
 
     }
 
@@ -337,18 +404,24 @@ public class TreeManager : MonoBehaviour
                     Vector3 intialPos = spawner.position;
 
                     spawner.Translate(Vector3.up * length);
-                    SpawnLine(intialPos,spawner.position);
-                    break;
+                    if(i + 1 < treeString.Length){
 
+                        AddVertexInfo(intialPos,spawner.position,treeString[i + 1]);
+
+                    }
+                    break;
 
             }
 
-            //cameraContain.UpdatePosition(spawner.position);
+            treeMesh.vertices = meshObj.vertices;
+            treeMesh.triangles = meshObj.triangles;
+
+            newTreeObj.GetComponent<MeshFilter>().mesh.Clear();
+            newTreeObj.GetComponent<MeshFilter>().mesh = treeMesh;
 
             cameraContain.UpdatePositionAvg(Vector3.zero,spawner.position);
 
             cameraContain.camera.orthographicSize = spawner.position.y * cameraContain.spawnerToSizeRatio;
-
 
         }
 

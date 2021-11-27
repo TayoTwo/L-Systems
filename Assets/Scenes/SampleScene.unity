@@ -526,8 +526,8 @@ MonoBehaviour:
   - {fileID: 1024448623}
   cameraContain: {fileID: 1810021151}
   timePerGen: 1
-  length: 0.5
-  width: 2
+  length: 1
+  width: 0.2
   currentTree: 
   currentGeneration: 0
   spawner: {fileID: 1467512410}
