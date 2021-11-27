@@ -7,6 +7,8 @@ public class CameraContain : MonoBehaviour{
     public Camera camera;
     public float spawnerToSizeRatio;
 
+    public Vector3 offset;
+
     void Awake() {
 
         camera = GetComponent<Camera>();
@@ -28,7 +30,7 @@ public class CameraContain : MonoBehaviour{
         Vector3 pos = Vector3.Lerp(f,l,0.5f);
         pos.z = -1f;
 
-        transform.position = pos;
+        transform.position = pos + offset;
 
     }
 }

@@ -106,11 +106,15 @@ public class TreeManager : MonoBehaviour
     List<Vector3> treeVertices = new List<Vector3>();
     List<int> treeTriangles = new List<int>();
 
+    LightingManager lightingManager;
+
     // Start is called before the first frame update
     void Start(){
 
         treeMesh = new Mesh();
         meshObj = new MeshObj();
+
+        lightingManager = GetComponent<LightingManager>();
 
         presetName = presets[preset].name;
         axiom = presets[preset].axiom;
@@ -119,7 +123,7 @@ public class TreeManager : MonoBehaviour
         productionRules = presets[preset].rules;
 
         currentTree += axiom;
-        Debug.Log(currentTree);
+        GenerateTreeMesh(currentTree);
         
     }
 
@@ -178,122 +182,74 @@ public class TreeManager : MonoBehaviour
 
     }
 
-    void AddVertexInfo(Vector3 start,Vector3 end,char nextChar){
+    void AddVertices(Vector3 pos){
 
-        Vector3[] vertices = new Vector3[]{
+        Vector3[] v = new Vector3[]{
 
-                //Bottom
-                Vector3.zero,
-                Vector3.right,
-                (Vector3.right + Vector3.forward),
-                Vector3.forward,
+            Vector3.up,
+            (Vector3.up + Vector3.forward),
+            Vector3.one,
+            (Vector3.right + Vector3.up)
 
-                //Top
-                Vector3.up,
-                (Vector3.up + Vector3.forward),
-                Vector3.one,
-                (Vector3.right + Vector3.up)
+        };
 
-            };
+        for(int i = 0; i < v.Length;i++){
 
-        for(int i = 0;i < vertices.Length;i++){
+            v[i].x -= 0.5f;
+            v[i].z -= 0.5f;
 
-            vertices[i].x -= 0.5f;
-            vertices[i].z -= 0.5f;
+            v[i].x *= width;
+            v[i].z *= width;
 
-            vertices[i].x *= width;
-            vertices[i].y *= length;
-            vertices[i].z *= width;
-
-            if(i < 4){
-                //0,1,2,3
-                vertices[i] += start;
-
-            } else {
-                //4,5,6,7
-                vertices[i] += end;
-
-            }
-
-            treeVertices.Add(vertices[i]);
+            v[i] += pos;
 
         }
 
+        treeVertices.AddRange(v);
 
-        if(nextChar == ']'){
-
-            treeTriangles.AddRange(
-
-                new int[]{
-
-                    //Bottom
-                    // 0,1,2,
-                    // 0,2,3,
-
-                    //Top
-                    4,5,6,
-                    4,6,7,
-
-                    //SideX+
-                    1,7,6,
-                    6,2,1,
-                    
-                    //SideX-
-                    0,3,5,
-                    5,4,0,
-
-                    //SideZ+
-                    6,5,3,
-                    3,2,6,
-
-                    //SideZ-
-                    7,1,0,
-                    0,4,7
-
-                }
-
-            );
-
-        } else {
-
-            treeTriangles.AddRange(
-
-                new int[]{
-
-                    //SideX+
-                    1,7,6,
-                    6,2,1,
-                    
-                    //SideX-
-                    0,3,5,
-                    5,4,0,
-
-                    //SideZ+
-                    6,5,3,
-                    3,2,6,
-
-                    //SideZ-
-                    7,1,0,
-                    0,4,7
-
-                }
-
-            );
-
-        }
-
-
-        meshObj = new MeshObj(
-                treeVertices.ToArray(),
-                treeTriangles.ToArray()
-            );
-
-        // obj.GetComponent<MeshFilter>().mesh.Clear();
-        // obj.GetComponent<MeshFilter>().mesh = meshObj.Generate();
-        // obj.GetComponent<MeshFilter>().mesh.RecalculateNormals();
 
     }
 
+    void AddTriangles(int s){
+
+        //Example
+                    // 0,1,5,
+                    // 5,4,0,
+
+                    // 1,2,5,
+                    // 5,2,6,
+
+                    // 2,3,6,
+                    // 6,3,7,
+
+                    // 3,0,7,
+                    // 7,0,4
+
+
+        //Adds 24 individual points but THREE TIMES LESS triangles i.e 8 triangles
+        treeTriangles.AddRange(
+
+                new int[]{
+
+                    s,s+1,s+5,
+                    s+5,s+4,s,
+
+                    s+1,s+2,s+5,
+                    s+5,s+2,s+6,
+
+                    s+2,s+3,s+6,
+                    s+6,s+3,s+7,
+
+                    s+3,s,s+7,
+                    s+7,s,s+4
+
+
+                }
+
+            );
+        
+
+    }
     //Using line renderers
     void GenerateTreeVisual(string treeString){
 
@@ -360,16 +316,45 @@ public class TreeManager : MonoBehaviour
     }
 
     void GenerateTreeMesh(string treeString){
+        char[] tree = treeString.ToCharArray();
+
+        int vertexIndex = 0;
+        int start = 0;
+        treeVertices.Clear();
+        treeTriangles.Clear();
 
         Destroy(newTreeObj);
         spawner.position = Vector3.zero;
         spawner.rotation = Quaternion.identity;
 
+        Vector3[] v = new Vector3[]{
+
+            Vector3.zero,
+            Vector3.forward,
+            (Vector3.right + Vector3.forward),
+            Vector3.right
+
+        };
+
+        for(int i = 0; i < v.Length;i++){
+
+            v[i].x -= 0.5f;
+            v[i].z -= 0.5f;
+
+            v[i].x *= width;
+            v[i].z *= width;
+
+            v[i] += spawner.position;
+
+        }
+
+        treeVertices.AddRange(v);
+        
         newTreeObj = (GameObject)Instantiate(treeObj,Vector3.zero,Quaternion.identity);
 
-        for(int i=0;i<treeString.Length;i++){
+        for(int i=0;i<tree.Length;i++){
 
-            switch(treeString[i]){
+            switch(tree[i]){
 
                 case '+':
 
@@ -401,29 +386,43 @@ public class TreeManager : MonoBehaviour
                     
                 default:
 
+                    vertexIndex++;
                     Vector3 intialPos = spawner.position;
-
                     spawner.Translate(Vector3.up * length);
-                    if(i + 1 < treeString.Length){
+                    AddVertices(spawner.position);
 
-                        AddVertexInfo(intialPos,spawner.position,treeString[i + 1]);
-
-                    }
                     break;
 
             }
 
-            treeMesh.vertices = meshObj.vertices;
-            treeMesh.triangles = meshObj.triangles;
-
-            newTreeObj.GetComponent<MeshFilter>().mesh.Clear();
-            newTreeObj.GetComponent<MeshFilter>().mesh = treeMesh;
-
-            cameraContain.UpdatePositionAvg(Vector3.zero,spawner.position);
-
-            cameraContain.camera.orthographicSize = spawner.position.y * cameraContain.spawnerToSizeRatio;
 
         }
+
+        start = 0;
+
+        for(int j = 0;j < vertexIndex;j++){
+
+            //Debug.Log(start);
+
+            AddTriangles(start);
+
+            start += 4;
+
+        }
+
+        //Debug.Log("G: " + currentGeneration + " V: " + treeVertices.Count + " T: " + (treeTriangles.Count/3));
+
+        newTreeObj.GetComponent<MeshFilter>().mesh.vertices =  treeVertices.ToArray();
+        newTreeObj.GetComponent<MeshFilter>().mesh.triangles = treeTriangles.ToArray();
+
+        newTreeObj.GetComponent<MeshFilter>().mesh.RecalculateNormals();
+
+        lightingManager.RerenderScene();
+        //newTreeObj.GetComponent<MeshFilter>().mesh.RecalculateNormals();
+
+        cameraContain.UpdatePositionAvg(Vector3.zero,spawner.position);
+
+        //cameraContain.camera.orthographicSize = spawner.position.y * cameraContain.spawnerToSizeRatio;
 
     }
 }
