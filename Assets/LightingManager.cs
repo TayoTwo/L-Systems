@@ -7,7 +7,7 @@ public class LightingManager : MonoBehaviour
 
     ReflectionProbe reflectionProbe;
     // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
 
         reflectionProbe = GetComponent<ReflectionProbe>();

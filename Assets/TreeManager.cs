@@ -7,16 +7,15 @@ public class Rule{
     
     public char inital;
     public string result;
+    public bool Match(char i){
 
-    public string Apply(char c){
+        if(i == inital){
 
-        if(c == inital){
-
-            return result;
+            return true;
 
         } else {
 
-            return c.ToString();
+            return false;
 
         }
 
@@ -123,7 +122,7 @@ public class TreeManager : MonoBehaviour
         productionRules = presets[preset].rules;
 
         currentTree += axiom;
-        GenerateTreeMesh(currentTree);
+        GenerateTree();
         
     }
 
@@ -146,7 +145,6 @@ public class TreeManager : MonoBehaviour
 
     void GenerateTree(){
 
-        currentGeneration++;
         newTree = "";
 
         for(int i = 0;i < currentTree.Length;i++){
@@ -157,17 +155,24 @@ public class TreeManager : MonoBehaviour
 
             for(int j = 0;j < productionRules.Length;j++){
 
-                result = productionRules[j].Apply(c);
+                if(productionRules[j].Match(c)){
+
+                    result = productionRules[j].GetResult();
+
+                }
 
             }
 
+            //Debug.Log("Result: " + result);
             newTree += result;
 
         }
 
         currentTree = newTree;
-        Debug.Log(currentTree);
-        GenerateTreeMesh(currentTree);
+        Debug.Log("Current Tree: " + currentTree);
+        GenerateTreeVisual(currentTree);
+        currentGeneration++;
+
 
     }
 
@@ -210,7 +215,7 @@ public class TreeManager : MonoBehaviour
 
     }
 
-    void AddTriangles(int s){
+    void AddSides(int s){
 
         //Example
                     // 0,1,5,
@@ -250,7 +255,24 @@ public class TreeManager : MonoBehaviour
         
 
     }
-    //Using line renderers
+
+    void AddTop(int s){
+
+        treeTriangles.AddRange(
+            
+            new int[]{
+
+                s,s+1,s+2,
+                s+2,s+2,s
+
+            } 
+
+        );
+
+
+    }
+
+    // //Using line renderers
     void GenerateTreeVisual(string treeString){
 
         Destroy(newTreeObj);
@@ -306,7 +328,7 @@ public class TreeManager : MonoBehaviour
 
             cameraContain.UpdatePositionAvg(Vector3.zero,spawner.position);
 
-            cameraContain.camera.orthographicSize = spawner.position.y * cameraContain.spawnerToSizeRatio;
+            //cameraContain.cam.orthographicSize = spawner.position.y * cameraContain.spawnerToSizeRatio;
 
 
         }
@@ -316,7 +338,6 @@ public class TreeManager : MonoBehaviour
     }
 
     void GenerateTreeMesh(string treeString){
-        char[] tree = treeString.ToCharArray();
 
         int vertexIndex = 0;
         int start = 0;
@@ -352,9 +373,9 @@ public class TreeManager : MonoBehaviour
         
         newTreeObj = (GameObject)Instantiate(treeObj,Vector3.zero,Quaternion.identity);
 
-        for(int i=0;i<tree.Length;i++){
+        for(int i=0;i<treeString.Length;i++){
 
-            switch(tree[i]){
+            switch(treeString[i]){
 
                 case '+':
 
@@ -382,6 +403,8 @@ public class TreeManager : MonoBehaviour
                     spawner.position = nodePos.position;
                     spawner.rotation = nodePos.rotation;
 
+                    AddTop(vertexIndex*4);
+
                     break;
                     
                 default:
@@ -404,7 +427,7 @@ public class TreeManager : MonoBehaviour
 
             //Debug.Log(start);
 
-            AddTriangles(start);
+            AddSides(start);
 
             start += 4;
 
@@ -418,9 +441,9 @@ public class TreeManager : MonoBehaviour
         newTreeObj.GetComponent<MeshFilter>().mesh.RecalculateNormals();
 
         lightingManager.RerenderScene();
-        //newTreeObj.GetComponent<MeshFilter>().mesh.RecalculateNormals();
 
-        cameraContain.UpdatePositionAvg(Vector3.zero,spawner.position);
+        cameraContain.UpdatePosition(spawner.position);
+        //cameraContain.UpdatePositionAvg(Vector3.zero,spawner.position);
 
         //cameraContain.camera.orthographicSize = spawner.position.y * cameraContain.spawnerToSizeRatio;
 

@@ -4,14 +4,14 @@ using UnityEngine;
 
 public class CameraContain : MonoBehaviour{
     
-    public Camera camera;
+    public Camera cam;
     public float spawnerToSizeRatio;
 
     public Vector3 offset;
 
     void Awake() {
 
-        camera = GetComponent<Camera>();
+        cam = GetComponent<Camera>();
         
     }
 
@@ -20,7 +20,7 @@ public class CameraContain : MonoBehaviour{
         Vector3 position = transform.position;
         pos.z = -1f;
         
-        transform.position = pos;
+        transform.position = pos + offset;
 
     }
 
