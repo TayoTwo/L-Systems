@@ -2,15 +2,20 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CameraContain : MonoBehaviour{
+public class CameraManager : MonoBehaviour{
     
     public Camera cam;
     public float smoothTime = 0.3f;
     public float lookHeight;
-    public float heightMult;
+    public float lineModeMult;
+    public float meshModeMult;
+    public float camSizeMult;
+
     public Vector3 offset;
+    public SequenceManager sequenceManager;
     Vector3 targetPos;
     Vector3 velocity;
+    float x;
 
     void Awake() {
 
@@ -21,21 +26,29 @@ public class CameraContain : MonoBehaviour{
     void LateUpdate(){
 
         transform.position = Vector3.SmoothDamp(transform.position,targetPos + offset,ref velocity,smoothTime);
+
         cam.transform.LookAt(targetPos);
 
     }
 
-    public void UpdateOffset(bool lines){
+    public void UpdateOffset(bool renderMesh,float tallestPoint){
 
-        float size =  targetPos.y * heightMult;
+        if(!renderMesh){
 
-        if(lines){
+            cam.orthographic = false;
 
-            offset = new Vector3(0,0,-1) * size;
+            x = lineModeMult * (tallestPoint);
+            offset = new Vector3(0,0,-1) * x;
 
         } else {
 
-            offset = new Vector3(-1,0,-1) * size;
+            cam.orthographic = true;
+
+            cam.orthographicSize = camSizeMult * tallestPoint;
+            x = meshModeMult * (tallestPoint);
+            offset = new Vector3(-1,1,-1) * x;
+
+            transform.position = targetPos + offset;
 
         }
 
@@ -53,6 +66,7 @@ public class CameraContain : MonoBehaviour{
     public void UpdatePositionAvg(Vector3 f,Vector3 l){
 
         targetPos = Vector3.Lerp(f,l,lookHeight);
+        transform.position = new Vector3(transform.position.x,targetPos.y + offset.y,transform.position.z);
         
         //transform.position = new Vector3(0,targetPos.y,0);
 

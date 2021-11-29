@@ -12,8 +12,9 @@ GameObject:
   - component: {fileID: -678945518534277929}
   - component: {fileID: 6313693668212661028}
   - component: {fileID: -6836535420824655406}
+  - component: {fileID: -2167119060530780778}
   m_Layer: 0
-  m_Name: Tree
+  m_Name: MeshObj
   m_TagString: Tree
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -115,3 +116,16 @@ ReflectionProbe:
   m_UseOcclusionCulling: 1
   m_Importance: 1
   m_CustomBakedTexture: {fileID: 0}
+--- !u!114 &-2167119060530780778
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4725027309951912290}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b30b77830b622f4f997c5514bb51c6c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rotSpeed: 15

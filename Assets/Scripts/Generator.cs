@@ -10,40 +10,34 @@ public struct BranchPos {
 
 }
 
-public class Generator : MonoBehaviour
-{
-
+public class Generator : MonoBehaviour{
 
     [Header("Objects")]
-    public CameraContain cameraContain;
     public Transform spawner;
     public GameObject treeObj;
     public GameObject line;
     public Stack<BranchPos> branchStack = new Stack<BranchPos>();
     
-    RulePreset preset;
     GameObject newTreeObj;
-    List<Vector3> treeVertices = new List<Vector3>();
-    List<int> treeTriangles = new List<int>();
+    List<Vector3> vertices = new List<Vector3>();
+    List<int> triangles = new List<int>();
 
-    float tallestPoint = 0f;
+    public float tallestPoint = 0f;
 
-    public void GenerateTree(string tree,bool renderMode,float len ,float wid ,float ang){
+    public void VisualizeSequence(string tree,bool mesh,float len ,float wid ,float ang){
 
         tallestPoint = 0;
 
-        switch(renderMode){
+        switch(mesh){
 
             case false:
 
-                GenerateTreeLines(tree,len,wid,ang);
-                cameraContain.UpdateOffset(true);
+                GenerateSequenceLines(tree,len,wid,ang);
                 break;
 
             case true:
 
-                GenerateTreeMesh(tree,len,wid,ang);
-                cameraContain.UpdateOffset(false);
+                GenerateSequenceMesh(tree,len,wid,ang);
                 break;
 
         }
@@ -54,7 +48,7 @@ public class Generator : MonoBehaviour
     //Generate the tree as a mesh or as lines depending on the mode
     //0 is for lines
     //1 is for meshes
-    void GenerateTreeLines(string treeString,float length,float width,float angle){
+    void GenerateSequenceLines(string sequenceString,float length,float width,float angle){
 
         BranchPos branchPos = new BranchPos();
         Destroy(newTreeObj);
@@ -63,11 +57,9 @@ public class Generator : MonoBehaviour
 
         newTreeObj = (GameObject)Instantiate(treeObj,Vector3.zero,Quaternion.identity);
 
-        for(int i=0;i<treeString.Length;i++){
+        for(int i=0;i<sequenceString.Length;i++){
 
-            //Debug.Log(i);
-
-            switch(treeString[i]){
+            switch(sequenceString[i]){
 
                 case '+':
 
@@ -102,31 +94,29 @@ public class Generator : MonoBehaviour
                     Vector3 intialPos = spawner.position;
 
                     spawner.Translate(Vector3.up * length);
-                    SpawnLine(intialPos,spawner.position);
+                    SpawnLine(intialPos,spawner.position,width);
                     break;
-
 
             }
 
-            //Camera stuff
+             //Camera stuff
             if(tallestPoint < spawner.position.y){
 
                 tallestPoint = spawner.position.y;
 
             }
 
-            cameraContain.UpdatePositionAvg(Vector3.zero, Vector3.up * tallestPoint);
-
 
         }
 
 
-
     }
-    void SpawnLine(Vector3 start,Vector3 end){
+    void SpawnLine(Vector3 start,Vector3 end, float width){
 
         GameObject obj = Instantiate(line,transform.position,Quaternion.identity);
         LineRenderer lineRenderer = obj.GetComponent<LineRenderer>();
+        lineRenderer.startWidth = width;
+        lineRenderer.endWidth = width;
 
         obj.transform.parent = newTreeObj.transform;
         lineRenderer.SetPosition(0,start);
@@ -134,13 +124,13 @@ public class Generator : MonoBehaviour
 
     }
 
-    void GenerateTreeMesh(string treeString,float length,float width,float angle){
+    void GenerateSequenceMesh(string sequenceString,float length,float width,float angle){
 
         int vertexIndex = 0;
         int start = 0;
         BranchPos branchPos = new BranchPos();
-        treeVertices.Clear();
-        treeTriangles.Clear();
+        vertices.Clear();
+        triangles.Clear();
         
         Destroy(newTreeObj);
         spawner.position = Vector3.zero;
@@ -167,13 +157,15 @@ public class Generator : MonoBehaviour
 
         }
 
-        treeVertices.AddRange(v);
+        vertices.AddRange(v);
         
         newTreeObj = (GameObject)Instantiate(treeObj,Vector3.zero,Quaternion.identity);
 
-        for(int i=0;i<treeString.Length;i++){
+        for(int i=0;i<sequenceString.Length;i++){
 
-           switch(treeString[i]){
+            start = vertexIndex * 4;
+
+           switch(sequenceString[i]){
 
                 case '+':
 
@@ -192,7 +184,6 @@ public class Generator : MonoBehaviour
                     branchPos.rotation = spawner.rotation;
 
                     branchStack.Push(branchPos);
-
                     break;
 
                 case ']':
@@ -201,7 +192,6 @@ public class Generator : MonoBehaviour
                     spawner.position = branchPos.position;
                     spawner.rotation = branchPos.rotation;
 
-                    start = vertexIndex * 4;
                     AddTop(start);
                     break;
                     
@@ -225,6 +215,7 @@ public class Generator : MonoBehaviour
             }
 
 
+
         }
 
         start = 0;
@@ -239,12 +230,18 @@ public class Generator : MonoBehaviour
 
         }
 
-        //Generate the tree Mesh
-        newTreeObj.GetComponent<MeshFilter>().mesh.vertices =  treeVertices.ToArray();
-        newTreeObj.GetComponent<MeshFilter>().mesh.triangles = treeTriangles.ToArray();
-        newTreeObj.GetComponent<MeshFilter>().mesh.RecalculateNormals();
+        AddTop(start);
 
-        cameraContain.UpdatePositionAvg(Vector3.zero, Vector3.up * tallestPoint);
+        Mesh mesh =  newTreeObj.GetComponent<MeshFilter>().mesh;
+
+        //Generate the tree Mesh
+        mesh.Clear();
+        mesh.vertices =  vertices.ToArray();
+        mesh.triangles = triangles.ToArray();
+        mesh.RecalculateNormals();
+        mesh.RecalculateTangents();
+        mesh.RecalculateBounds();
+
 
     }
 
@@ -271,7 +268,7 @@ public class Generator : MonoBehaviour
 
         }
 
-        treeVertices.AddRange(v);
+        vertices.AddRange(v);
 
 
     }
@@ -279,7 +276,7 @@ public class Generator : MonoBehaviour
     void AddSides(int s){
 
         //Adds 24 individual points but THREE TIMES LESS triangles i.e 8 triangles
-        treeTriangles.AddRange(
+        triangles.AddRange(
 
                 new int[]{
 
@@ -305,12 +302,12 @@ public class Generator : MonoBehaviour
 
     void AddTop(int s){
 
-        treeTriangles.AddRange(
+        triangles.AddRange(
             
             new int[]{
 
                 s,s+1,s+2,
-                s+2,s+2,s
+                s+2,s+3,s
 
             } 
 
