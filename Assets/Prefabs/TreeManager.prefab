@@ -601,7 +601,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   presetIndex: 7
-  generatorMode: 0
+  renderMode: 0
   presets:
   - {fileID: 8649663619500386673}
   - {fileID: 8649663618653272656}
@@ -616,7 +616,8 @@ MonoBehaviour:
   length: 0.2
   width: 0.05
   currentTree: 
-  currentGeneration: 0
+  currentGeneration: 1
+  trees: []
   presetName: 
   axiom: 
   angle: 25

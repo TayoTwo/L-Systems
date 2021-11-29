@@ -38,7 +38,7 @@ public class CameraContain : MonoBehaviour{
             offset = new Vector3(-1,0,-1) * size;
 
         }
-        
+
 
     }
 

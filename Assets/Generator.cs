@@ -28,18 +28,19 @@ public class Generator : MonoBehaviour
 
     float tallestPoint = 0f;
 
-    public void GenerateTree(string tree,int mode ,float len ,float wid ,float ang){
+    public void GenerateTree(string tree,bool renderMode,float len ,float wid ,float ang){
 
+        tallestPoint = 0;
 
-        switch(mode){
+        switch(renderMode){
 
-            case 0:
+            case false:
 
                 GenerateTreeLines(tree,len,wid,ang);
                 cameraContain.UpdateOffset(true);
                 break;
 
-            case 1:
+            case true:
 
                 GenerateTreeMesh(tree,len,wid,ang);
                 cameraContain.UpdateOffset(false);

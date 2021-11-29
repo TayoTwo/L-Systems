@@ -33,7 +33,7 @@ public class TreeManager : MonoBehaviour
 {
     
     public int presetIndex;
-    public int generatorMode;
+    public bool renderMode;
     public List<RulePreset> presets = new List<RulePreset>();
 
     [Header("Visual Variables")]
@@ -45,7 +45,8 @@ public class TreeManager : MonoBehaviour
     [Header("Realtime Values")]
     [SerializeField]  
     public string currentTree;
-    public int currentGeneration = 0;
+    public int currentGeneration;
+    public List<string> trees = new List<string>();
 
     [Header("Preset's Values")]
     public string presetName;
@@ -70,28 +71,19 @@ public class TreeManager : MonoBehaviour
         n = presets[presetIndex].n;
         productionRules = presets[presetIndex].rules;
 
-        currentTree += axiom;
-        Debug.Log(currentTree);
         GenerateTreeString();
 
     }
 
-    void Update() {
+    public void ChangeGeneration(int i){
 
-        //Generate a new tree every x seconds
-        if(time >= timePerGen){
+        if(currentGeneration + i < n && currentGeneration + i > 0){
 
-            if(currentGeneration < n){
-
-                GenerateTreeString();
-
-            }
-
-            time = 0;
+            currentGeneration += i;
 
         }
-        
-        time += Time.deltaTime;
+
+
     }
 
     //Depending on if the 
@@ -123,21 +115,28 @@ public class TreeManager : MonoBehaviour
 
     }
 
-    void GenerateTreeString(){
+    public void GenerateTreeString(){
+
+        currentTree = axiom;
 
         //Increase the generation count and create a variable to store the new tree
-        currentGeneration++;
-        newTree = "";
+        for(int i = 0;i < currentGeneration;i++){
 
-        foreach(char c in currentTree){
+            newTree = "";
 
-            newTree += ApplyRule(c);
+            foreach(char c in currentTree){
+
+                newTree += ApplyRule(c);
+
+            }
+            
+            currentTree = newTree;
+
+            Debug.Log(currentTree);
 
         }
 
-        currentTree = newTree;
-        Debug.Log(currentTree);
-        generator.GenerateTree(currentTree,generatorMode,length,width,angle);
+        generator.GenerateTree(currentTree,renderMode,length,width,angle);
         lightingManager.RerenderScene();
 
     }
